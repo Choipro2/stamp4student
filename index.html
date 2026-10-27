@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>학생용 스탬프 도안 생성기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        /* 커스텀 스크롤바 */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* 캔버스 래퍼 - 체크무늬 배경으로 투명도 확인 */
+        #canvas-wrapper {
+            background-image: 
+                linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+                linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            min-height: 300px;
+        }
+        
+        canvas {
+            max-width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            cursor: grab; /* 드래그 가능 커서 추가 */
+            touch-action: none; /* 모바일에서 드래그 시 스크롤 방지 */
+        }
+        
+        canvas:active {
+            cursor: grabbing; /* 클릭(드래그) 중일 때 쥔 손 커서 */
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex justify-center items-start">
+
+<div class="max-w-5xl w-full bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col md:flex-row">
+    
+    <!-- 왼쪽 컨트롤 패널 -->
+    <div class="w-full md:w-1/2 p-6 md:p-8 border-b md:border-b-0 md:border-r border-gray-200">
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">스탬프 도안 생성<span id="adminTrigger" class="cursor-pointer">기</span></h1>
+        <p class="text-sm text-gray-500 mb-6">그림이나 사진을 업로드하여 도장 제작용 흑백 도안을 만드세요.</p>
+
+        <!-- 1. 모양 선택 -->
+        <div class="mb-6">
+            <label class="block text-sm font-semibold text-gray-700 mb-3">1. 테두리 모양</label>
+            <div class="flex gap-2">
+                <label class="flex-1">
+                    <input type="radio" name="shape" value="circle" class="peer sr-only">
+                    <div class="px-2 py-2 text-center text-sm border rounded-lg cursor-pointer peer-checked:bg-gray-900 peer-checked:text-white peer-checked:border-gray-900 hover:bg-gray-50 transition-colors">원형</div>
+                </label>
+                <label class="flex-1">
+                    <input type="radio" name="shape" value="square" checked class="peer sr-only">
+                    <div class="px-2 py-2 text-center text-sm border rounded-lg cursor-pointer peer-checked:bg-gray-900 peer-checked:text-white peer-checked:border-gray-900 hover:bg-gray-50 transition-colors">정사각형</div>
+                </label>
+                <label class="flex-1">
+                    <input type="radio" name="shape" value="rect" class="peer sr-only">
+                    <div class="px-2 py-2 text-center text-sm border rounded-lg cursor-pointer peer-checked:bg-gray-900 peer-checked:text-white peer-checked:border-gray-900 hover:bg-gray-50 transition-colors">직사각형</div>
+                </label>
+                <label class="flex-1">
+                    <input type="radio" name="shape" value="none" class="peer sr-only">
+                    <div class="px-2 py-2 text-center text-sm border rounded-lg cursor-pointer peer-checked:bg-gray-900 peer-checked:text-white peer-checked:border-gray-900 hover:bg-gray-50 transition-colors">없음</div>
+                </label>
+            </div>
+            
+            <!-- 직사각형 비율 설정 (직사각형 선택 시 표시) -->
+            <div id="ratioControl" class="mt-3 hidden bg-gray-50 p-3 rounded-lg flex items-center gap-3">
+                <span class="text-sm text-gray-600 font-medium">비율</span>
+                <div class="flex items-center gap-2">
+                    <input type="number" id="ratioX" value="3" min="1" max="10" class="w-16 px-2 py-1 border rounded text-center focus:outline-none focus:border-gray-500">
+                    <span class="text-gray-400">:</span>
+                    <input type="number" id="ratioY" value="1" min="1" max="10" class="w-16 px-2 py-1 border rounded text-center focus:outline-none focus:border-gray-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 이미지 업로드 -->
+        <div class="mb-6">
+            <label class="block text-sm font-semibold text-gray-700 mb-3">2. 이미지 업로드</label>
+            <div class="flex items-center justify-center w-full">
+                <label for="imageUpload" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                        <svg class="w-8 h-8 mb-3 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                        </svg>
+                        <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">클릭하여 파일 선택</span> 또는 드래그 앤 드롭</p>
+                    </div>
+                    <input id="imageUpload" type="file" accept="image/png, image/jpeg, image/jpg" class="hidden" />
+                </label>
+            </div>
+        </div>
+
+        <!-- 3. 상세 설정 -->
+        <div class="space-y-5 mb-6">
+            <label class="block text-sm font-semibold text-gray-700">3. 도안 미세 조정</label>
+            
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-600">흑백 대비 (임계값)</span>
+                    <span id="thresholdVal" class="font-mono text-gray-900">128</span>
+                </div>
+                <input type="range" id="thresholdSlider" min="0" max="255" value="128" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-900">
+                <p class="text-xs text-gray-500 mt-1">값을 조절하여 회색 음영을 완벽한 검은색으로 만드세요.</p>
+            </div>
+
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-600">이미지 선 굵기 (진하게)</span>
+                    <span id="thickVal" class="font-mono text-gray-900">0</span>
+                </div>
+                <input type="range" id="thickSlider" min="0" max="15" value="0" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-900">
+                <p class="text-xs text-gray-500 mt-1">도안의 선이 너무 얇다면 값을 올려 진하게 덧칠하세요.</p>
+            </div>
+
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-600">이미지 크기 (여백 조절)</span>
+                    <span id="scaleVal" class="font-mono text-gray-900">90%</span>
+                </div>
+                <input type="range" id="scaleSlider" min="10" max="200" value="90" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-900">
+                <p class="text-xs text-gray-500 mt-1">원본에 여백이 많아 작게 보인다면 100% 이상으로 확대하세요.</p>
+            </div>
+
+            <div id="borderSliderContainer" class="transition-opacity duration-200">
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-600">테두리 선 두께 (최소 0.3mm 권장)</span>
+                    <span id="borderVal" class="font-mono text-gray-900">12px</span>
+                </div>
+                <input type="range" id="borderSlider" min="0" max="40" value="12" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-900">
+            </div>
+        </div>
+    </div>
+
+    <!-- 오른쪽 미리보기 패널 -->
+    <div class="w-full md:w-1/2 p-6 md:p-8 bg-gray-50 flex flex-col">
+        <div class="flex justify-between items-center mb-2">
+            <h2 class="text-lg font-bold text-gray-900">도안 미리보기</h2>
+            <button id="centerAlignBtn" class="px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 text-sm rounded-lg shadow-sm transition-colors font-medium flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                가운데 정렬
+            </button>
+        </div>
+        <p class="text-xs text-blue-600 mb-4 font-bold animate-pulse">※ 캔버스 안의 이미지를 드래그하여 자유롭게 이동할 수 있습니다.</p>
+        
+        <div id="canvas-wrapper" class="flex-1 w-full border border-gray-200 shadow-inner p-4 mb-6 relative group">
+            <canvas id="stampCanvas"></canvas>
+            <div id="emptyState" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span class="text-gray-400 font-medium">이미지를 업로드하면 미리보기가 나타납니다.</span>
+            </div>
+        </div>
+
+        <!-- 제작 가이드라인 -->
+        <div class="bg-white p-4 rounded-lg border border-gray-200 mb-6 text-sm text-gray-600 space-y-2">
+            <h3 class="font-bold text-gray-800 mb-2">📌 제작 시 필수 확인 사항</h3>
+            <ul class="list-disc pl-4 space-y-1 text-xs">
+                <li>도안은 반드시 <b>검은색 단색</b>이어야 합니다. (현재 미리보기 반영)</li>
+                <li>그라데이션 및 회색 음영은 사용할 수 없습니다.</li>
+                <li>너무 얇은 선이나 작은 점은 뭉개질 수 있습니다.</li>
+                <li>글자가 있다면 굵고 또렷하게 보이도록 조절하세요.</li>
+            </ul>
+        </div>
+
+        <button id="downloadBtn" class="w-full bg-gray-900 hover:bg-black text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+            스탬프 도안 파일 다운로드
+        </button>
+        
+        <button id="sendToDriveBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 mt-3 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M2 6a2 2 0 012-2h5.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293H16a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+            </svg>
+            구글 드라이브로 보내기
+        </button>
+    </div>
+</div>
+
+<!-- 관리자 모달 -->
+<div id="adminModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center transition-opacity duration-300">
+    <div class="bg-white p-6 rounded-2xl shadow-xl w-80 transform transition-transform duration-300 scale-100">
+        <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+            </svg>
+            관리자 설정
+        </h2>
+        <div class="flex items-center justify-between mb-6">
+            <span class="text-sm font-medium text-gray-700">구글 드라이브 버튼 표시</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="driveBtnToggle" class="sr-only peer" checked>
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+        </div>
+        <button id="closeAdminBtn" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-2 rounded-lg transition-colors">닫기</button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const canvas = document.getElementById('stampCanvas');
+        const ctx = canvas.getContext('2d');
+        const emptyState = document.getElementById('emptyState');
+        
+        // 입력 요소들
+        const shapeRadios = document.querySelectorAll('input[name="shape"]');
+        const ratioControl = document.getElementById('ratioControl');
+        const ratioXInput = document.getElementById('ratioX');
+        const ratioYInput = document.getElementById('ratioY');
+        
+        const imageUpload = document.getElementById('imageUpload');
+        
+        const thresholdSlider = document.getElementById('thresholdSlider');
+        const thresholdVal = document.getElementById('thresholdVal');
+        
+        const thickSlider = document.getElementById('thickSlider');
+        const thickVal = document.getElementById('thickVal');
+        
+        const scaleSlider = document.getElementById('scaleSlider');
+        const scaleVal = document.getElementById('scaleVal');
+        
+        const borderSlider = document.getElementById('borderSlider');
+        const borderVal = document.getElementById('borderVal');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const sendToDriveBtn = document.getElementById('sendToDriveBtn');
+        const centerAlignBtn = document.getElementById('centerAlignBtn');
+
+        // 관리자 관련 DOM
+        const adminTrigger = document.getElementById('adminTrigger');
+        const adminModal = document.getElementById('adminModal');
+        const closeAdminBtn = document.getElementById('closeAdminBtn');
+        const driveBtnToggle = document.getElementById('driveBtnToggle');
+
+        let uploadedImg = null;
+        const BASE_SIZE = 800; // 고해상도 출력을 위한 기본 캔버스 크기
+
+        // 이미지 이동 조작을 위한 변수 추가
+        let imageOffsetX = 0;
+        let imageOffsetY = 0;
+        let isDragging = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+
+        // 이미지 처리용 오프스크린 캔버스 (도안을 흑백으로 변환하기 위함)
+        const offCanvas = document.createElement('canvas');
+        const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+
+        // 이벤트 리스너 등록
+        shapeRadios.forEach(r => r.addEventListener('change', (e) => {
+            if(e.target.value === 'rect') {
+                ratioControl.classList.remove('hidden');
+            } else {
+                ratioControl.classList.add('hidden');
+            }
+            
+            // '없음' 선택 시 테두리 두께 슬라이더 비활성화
+            const borderContainer = document.getElementById('borderSliderContainer');
+            const borderSlider = document.getElementById('borderSlider');
+            if(e.target.value === 'none') {
+                borderContainer.style.opacity = '0.4';
+                borderSlider.disabled = true;
+            } else {
+                borderContainer.style.opacity = '1';
+                borderSlider.disabled = false;
+            }
+            
+            renderStamp();
+        }));
+
+        [ratioXInput, ratioYInput].forEach(el => el.addEventListener('input', renderStamp));
+
+        thresholdSlider.addEventListener('input', (e) => {
+            thresholdVal.textContent = e.target.value;
+            renderStamp();
+        });
+
+        thickSlider.addEventListener('input', (e) => {
+            thickVal.textContent = e.target.value;
+            renderStamp();
+        });
+
+        scaleSlider.addEventListener('input', (e) => {
+            scaleVal.textContent = e.target.value + '%';
+            renderStamp();
+        });
+
+        borderSlider.addEventListener('input', (e) => {
+            borderVal.textContent = e.target.value + 'px';
+            renderStamp();
+        });
+
+        // 이미지 업로드 처리
+        imageUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    uploadedImg = img;
+                    emptyState.style.display = 'none'; // 비어있음 안내 숨기기
+                    
+                    // 새 이미지 업로드 시 위치를 가운데로 초기화
+                    imageOffsetX = 0;
+                    imageOffsetY = 0;
+                    renderStamp();
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
+
+        function renderStamp() {
+            if (!uploadedImg) {
+                // 이미지가 없어도 기본 테두리는 그려주어 모양을 미리 볼 수 있게 함
+                drawBaseShape();
+                return;
+            }
+            drawBaseShape();
+        }
+
+        function drawBaseShape() {
+            const shape = document.querySelector('input[name="shape"]:checked').value;
+            const threshold = parseInt(thresholdSlider.value);
+            const imgThick = parseInt(thickSlider.value);
+            const scalePct = parseInt(scaleSlider.value);
+            const borderThick = parseInt(borderSlider.value);
+            
+            // 1. 비율에 따른 캔버스 크기 설정
+            let w = BASE_SIZE;
+            let h = BASE_SIZE;
+            
+            if (shape === 'rect') {
+                const rx = Math.max(1, parseInt(ratioXInput.value) || 1);
+                const ry = Math.max(1, parseInt(ratioYInput.value) || 1);
+                if (rx > ry) {
+                    w = BASE_SIZE;
+                    h = BASE_SIZE * (ry / rx);
+                } else {
+                    h = BASE_SIZE;
+                    w = BASE_SIZE * (rx / ry);
+                }
+            }
+
+            canvas.width = w;
+            canvas.height = h;
+            
+            // 배경 투명화
+            ctx.clearRect(0, 0, w, h);
+
+            // 2. 테두리 그리기
+            if (borderThick > 0 && shape !== 'none') {
+                ctx.lineWidth = borderThick;
+                ctx.strokeStyle = '#000000'; // 도안은 무조건 검은색
+                ctx.beginPath();
+                
+                if (shape === 'circle') {
+                    // 테두리가 잘리지 않도록 선 두께의 반절만큼 안쪽으로 그림
+                    ctx.arc(w/2, h/2, w/2 - (borderThick/2), 0, Math.PI * 2);
+                } else {
+                    ctx.rect(borderThick/2, borderThick/2, w - borderThick, h - borderThick);
+                }
+                ctx.stroke();
+            }
+
+            // 3. 업로드된 이미지가 있으면 흑백 변환 후 삽입
+            if (uploadedImg) {
+                ctx.save();
+                
+                // 마스킹(클리핑) 영역 설정 - 여백 제한 없이 테두리 안쪽까지만 잘리도록 설정
+                const clipMargin = shape === 'none' ? 0 : borderThick; 
+                ctx.beginPath();
+                if (shape === 'circle') {
+                    // 반지름이 음수가 되지 않도록 보호
+                    const clipRadius = Math.max(1, w/2 - clipMargin);
+                    ctx.arc(w/2, h/2, clipRadius, 0, Math.PI * 2);
+                } else {
+                    const clipW = Math.max(1, w - clipMargin*2);
+                    const clipH = Math.max(1, h - clipMargin*2);
+                    ctx.rect(clipMargin, clipMargin, clipW, clipH);
+                }
+                ctx.clip();
+
+                // 이미지 그릴 기준 영역 계산
+                const baseDrawW = w - clipMargin*2;
+                const baseDrawH = h - clipMargin*2;
+                if (baseDrawW <= 0 || baseDrawH <= 0) { ctx.restore(); return; } 
+
+                const imgRatio = uploadedImg.width / uploadedImg.height;
+                const areaRatio = baseDrawW / baseDrawH;
+                let drawW, drawH;
+
+                // 크기 슬라이더(scalePct) 적용. 100%일때 박스에 딱 맞음.
+                if (imgRatio > areaRatio) {
+                    drawW = baseDrawW * (scalePct / 100);
+                    drawH = drawW / imgRatio;
+                } else {
+                    drawH = baseDrawH * (scalePct / 100);
+                    drawW = drawH * imgRatio;
+                }
+
+                // 이미지 이동 좌표(Offset) 반영
+                const drawX = (w/2 - drawW/2) + imageOffsetX;
+                const drawY = (h/2 - drawH/2) + imageOffsetY;
+
+                // 이미지를 오프스크린 캔버스에 그리기
+                // 선 굵기 확장을 위해 오프스크린 캔버스를 전체 영역 크기로 잡음
+                offCanvas.width = w;
+                offCanvas.height = h;
+                
+                // 배경을 흰색으로 채워 투명 배경 이미지 및 팽창 효과 오류 방지
+                offCtx.fillStyle = '#ffffff';
+                offCtx.fillRect(0, 0, w, h);
+                
+                // 원본 이미지 그리기
+                offCtx.drawImage(uploadedImg, drawX, drawY, drawW, drawH);
+
+                // 이미지 선 굵기(두께) 조절 로직
+                // Darken 모드를 활용하여 원본 선 주위를 여러 방향으로 덧칠해 팽창(Dilation)시킵니다.
+                if (imgThick > 0) {
+                    offCtx.globalCompositeOperation = 'darken';
+                    const steps = 16; // 자연스러운 굵기를 위해 16방향으로 복사
+                    for (let i = 0; i < steps; i++) {
+                        const angle = (i / steps) * Math.PI * 2;
+                        const ox = Math.cos(angle) * imgThick;
+                        const oy = Math.sin(angle) * imgThick;
+                        offCtx.drawImage(uploadedImg, drawX + ox, drawY + oy, drawW, drawH);
+                    }
+                    offCtx.globalCompositeOperation = 'source-over'; // 합성 모드 원상 복구
+                }
+
+                // 픽셀 데이터 가져와서 임계값(Threshold) 기반 이진화(흑백화) 처리
+                const imgData = offCtx.getImageData(0, 0, w, h);
+                const data = imgData.data;
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    
+                    // 인간의 눈에 맞는 흑백(루미넌스) 변환 공식
+                    const brightness = (0.299 * r + 0.587 * g + 0.114 * b);
+                    
+                    if (brightness > threshold) {
+                        // 밝은 배경색은 투명하게 (흰색 제거)
+                        data[i + 3] = 0; 
+                    } else {
+                        // 어두운 선은 완벽한 검은색으로
+                        data[i] = 0;
+                        data[i + 1] = 0;
+                        data[i + 2] = 0;
+                        data[i + 3] = 255;
+                    }
+                }
+                
+                // 변환된 픽셀 데이터를 적용하고 메인 캔버스에 그리기
+                offCtx.putImageData(imgData, 0, 0);
+                ctx.drawImage(offCanvas, 0, 0);
+                
+                ctx.restore();
+            }
+        }
+
+        // 다운로드 로직
+        downloadBtn.addEventListener('click', () => {
+            if (!uploadedImg) {
+                // 메시지 안내
+                const origText = downloadBtn.innerHTML;
+                downloadBtn.innerHTML = '이미지를 먼저 업로드해주세요!';
+                downloadBtn.classList.replace('bg-gray-900', 'bg-red-500');
+                setTimeout(() => {
+                    downloadBtn.innerHTML = origText;
+                    downloadBtn.classList.replace('bg-red-500', 'bg-gray-900');
+                }, 2000);
+                return;
+            }
+            
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = `스탬프도안_${Date.now()}.png`;
+            link.href = dataURL;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        // --- 구글 드라이브 연동 전송 로직 ---
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby-yGrO5iLzsW-SFUlJtIIjI7Rvq9yMtHY7sg5UxENKV-jdzlfEsPHNTws12T-OerMG/exec"; // ★ 앱스스크립트 URL 입력
+        
+        if(sendToDriveBtn) {
+            sendToDriveBtn.addEventListener('click', () => {
+                if (!uploadedImg) {
+                    const origText = sendToDriveBtn.innerHTML;
+                    sendToDriveBtn.innerHTML = '이미지를 먼저 업로드해주세요!';
+                    sendToDriveBtn.classList.replace('bg-blue-600', 'bg-red-500');
+                    setTimeout(() => {
+                        sendToDriveBtn.innerHTML = origText;
+                        sendToDriveBtn.classList.replace('bg-red-500', 'bg-blue-600');
+                    }, 2000);
+                    return;
+                }
+
+                const fileName = prompt("저장할 파일 이름을 입력해주세요 (확장자 제외):", "스탬프도안");
+                if (!fileName) return; // 사용자가 취소를 누른 경우 중단
+
+                // 버튼 상태를 업로드 중으로 변경
+                const originalText = sendToDriveBtn.innerHTML;
+                sendToDriveBtn.innerHTML = `
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    업로드 중...
+                `;
+                sendToDriveBtn.disabled = true;
+                sendToDriveBtn.classList.add('opacity-75', 'cursor-not-allowed');
+
+                // 캔버스 이미지 데이터 추출
+                const dataURL = canvas.toDataURL('image/png');
+                const base64Data = dataURL.split(',')[1];
+
+                // 앱스 스크립트로 데이터 전송 (CORS 우회를 위해 text/plain 사용)
+                fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    redirect: 'follow', // 리다이렉트 명시적 허용
+                    body: JSON.stringify({
+                        fileName: fileName,
+                        mimeType: 'image/png',
+                        fileData: base64Data
+                    }),
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8', 
+                    }
+                })
+                .then(async response => {
+                    const text = await response.text();
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        throw new Error('서버 응답 오류: ' + text.substring(0, 100) + '...');
+                    }
+                })
+                .then(result => {
+                    if (result.status === 'success') {
+                        sendToDriveBtn.innerHTML = '전송 완료!';
+                        sendToDriveBtn.classList.replace('bg-blue-600', 'bg-green-500');
+                    } else {
+                        // 에러 메시지가 undefined일 경우, 구글 서버의 에러 원문(JSON)을 그대로 출력
+                        const errMsg = result.message || JSON.stringify(result);
+                        alert('오류 발생: ' + errMsg);
+                        sendToDriveBtn.innerHTML = '전송 실패';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('요청 중 문제가 발생했습니다:\n' + error.message);
+                    sendToDriveBtn.innerHTML = '전송 실패';
+                })
+                .finally(() => {
+                    // 3초 후 버튼 원래 상태로 복구
+                    setTimeout(() => {
+                        sendToDriveBtn.innerHTML = originalText;
+                        sendToDriveBtn.disabled = false;
+                        sendToDriveBtn.classList.remove('opacity-75', 'cursor-not-allowed', 'bg-green-500');
+                        sendToDriveBtn.classList.add('bg-blue-600');
+                    }, 3000);
+                });
+            });
+        }
+
+        // --- 마우스 및 터치 드래그 이벤트 구현 ---
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            // 화면상의 렌더링된 크기와 캔버스의 실제 해상도(BASE_SIZE) 간의 비율 계산
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let clientX = evt.clientX;
+            let clientY = evt.clientY;
+
+            // 터치 이벤트인 경우 좌표 추출
+            if (evt.touches && evt.touches.length > 0) {
+                clientX = evt.touches[0].clientX;
+                clientY = evt.touches[0].clientY;
+            }
+
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function handleStart(e) {
+            if (!uploadedImg) return;
+            if (e.cancelable) e.preventDefault(); // 스크롤 등 기본 동작 방지
+            isDragging = true;
+            const pos = getMousePos(e);
+            lastMouseX = pos.x;
+            lastMouseY = pos.y;
+        }
+
+        function handleMove(e) {
+            if (!isDragging || !uploadedImg) return;
+            if (e.cancelable) e.preventDefault(); // 드래그 시 스크롤 방지
+            const pos = getMousePos(e);
+            
+            // 이동한 픽셀만큼 오프셋에 추가
+            const dx = pos.x - lastMouseX;
+            const dy = pos.y - lastMouseY;
+            
+            imageOffsetX += dx;
+            imageOffsetY += dy;
+            
+            lastMouseX = pos.x;
+            lastMouseY = pos.y;
+            
+            renderStamp(); // 좌표 업데이트 후 캔버스 다시 렌더링
+        }
+
+        function handleEnd() {
+            isDragging = false;
+        }
+
+        // 캔버스 이벤트 리스너 등록
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('touchstart', handleStart, {passive: false});
+
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('touchmove', handleMove, {passive: false});
+
+        canvas.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('mouseleave', handleEnd);
+        canvas.addEventListener('touchend', handleEnd);
+
+        // 가운데 정렬 버튼 이벤트
+        centerAlignBtn.addEventListener('click', () => {
+            imageOffsetX = 0;
+            imageOffsetY = 0;
+            renderStamp();
+        });
+
+        // --- 관리자 설정 (드라이브 버튼 숨김 처리) ---
+        // 1. 로컬 스토리지에서 기존 설정 불러오기
+        const savedDriveBtnState = localStorage.getItem('showDriveBtn');
+        if (savedDriveBtnState === 'false') {
+            driveBtnToggle.checked = false;
+            if (sendToDriveBtn) sendToDriveBtn.style.display = 'none';
+        }
+
+        // 2. 타이틀의 '기' 클릭 시 모달 열기
+        adminTrigger.addEventListener('click', () => {
+            adminModal.classList.remove('hidden');
+        });
+
+        // 3. 모달 닫기
+        closeAdminBtn.addEventListener('click', () => {
+            adminModal.classList.add('hidden');
+        });
+
+        // 4. 모달 바깥 영역 클릭 시 닫기
+        adminModal.addEventListener('click', (e) => {
+            if (e.target === adminModal) {
+                adminModal.classList.add('hidden');
+            }
+        });
+
+        // 5. 토글 스위치 변경 이벤트
+        driveBtnToggle.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            if (sendToDriveBtn) {
+                if (isChecked) {
+                    sendToDriveBtn.style.display = 'flex'; // 기본 display 속성(Tailwind flex) 복구
+                    localStorage.setItem('showDriveBtn', 'true');
+                } else {
+                    sendToDriveBtn.style.display = 'none';
+                    localStorage.setItem('showDriveBtn', 'false');
+                }
+            }
+        });
+
+        // 초기 테두리 그리기
+        drawBaseShape();
+    });
+</script>
+</body>
+</html>
