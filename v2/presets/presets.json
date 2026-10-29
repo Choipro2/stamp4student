@@ -1,0 +1,142 @@
+[
+ {
+  "file": "p00_mascot.png",
+  "name": "학교 캐릭터",
+  "group": "우리 학교"
+ },
+ {
+  "file": "p01_cat_wizard.png",
+  "name": "마법사 고양이",
+  "group": "동물 친구"
+ },
+ {
+  "file": "p02_dog_king.png",
+  "name": "왕관 강아지",
+  "group": "동물 친구"
+ },
+ {
+  "file": "p03_bear_honey.png",
+  "name": "꿀단지 곰",
+  "group": "동물 친구"
+ },
+ {
+  "file": "p04_fox_scarf.png",
+  "name": "목도리 여우",
+  "group": "동물 친구"
+ },
+ {
+  "file": "p05_rabbit_astro.png",
+  "name": "우주 토끼",
+  "group": "동물 친구"
+ },
+ {
+  "file": "p06_penguin_fish.png",
+  "name": "펭귄",
+  "group": "동물 친구"
+ },
+ {
+  "file": "p07_owl.png",
+  "name": "부엉이",
+  "group": "동물 친구"
+ },
+ {
+  "file": "p08_panda.png",
+  "name": "판다",
+  "group": "동물 친구"
+ },
+ {
+  "file": "p09_lion.png",
+  "name": "사자",
+  "group": "동물 친구"
+ },
+ {
+  "file": "p10_dragon.png",
+  "name": "아기 용",
+  "group": "바다·신화·공룡"
+ },
+ {
+  "file": "p11_phoenix.png",
+  "name": "봉황",
+  "group": "바다·신화·공룡"
+ },
+ {
+  "file": "p12_koi.png",
+  "name": "잉어",
+  "group": "바다·신화·공룡"
+ },
+ {
+  "file": "p13_turtle.png",
+  "name": "거북이",
+  "group": "바다·신화·공룡"
+ },
+ {
+  "file": "p14_jellyfish.png",
+  "name": "해파리",
+  "group": "바다·신화·공룡"
+ },
+ {
+  "file": "p15_whale.png",
+  "name": "고래",
+  "group": "바다·신화·공룡"
+ },
+ {
+  "file": "p16_trex.png",
+  "name": "티라노",
+  "group": "바다·신화·공룡"
+ },
+ {
+  "file": "p17_unicorn.png",
+  "name": "유니콘",
+  "group": "바다·신화·공룡"
+ },
+ {
+  "file": "p18_wolf_moon.png",
+  "name": "늑대와 달",
+  "group": "바다·신화·공룡"
+ },
+ {
+  "file": "p19_rocket.png",
+  "name": "로켓",
+  "group": "탈것·사물·자연"
+ },
+ {
+  "file": "p20_pirate_ship.png",
+  "name": "해적선",
+  "group": "탈것·사물·자연"
+ },
+ {
+  "file": "p21_castle.png",
+  "name": "성",
+  "group": "탈것·사물·자연"
+ },
+ {
+  "file": "p22_lighthouse.png",
+  "name": "등대",
+  "group": "탈것·사물·자연"
+ },
+ {
+  "file": "p23_robot.png",
+  "name": "로봇",
+  "group": "탈것·사물·자연"
+ },
+ {
+  "file": "p24_sun.png",
+  "name": "해님",
+  "group": "탈것·사물·자연"
+ },
+ {
+  "file": "p25_tree.png",
+  "name": "나무",
+  "group": "탈것·사물·자연"
+ },
+ {
+  "file": "p26_lotus.png",
+  "name": "연꽃",
+  "group": "탈것·사물·자연"
+ },
+ {
+  "file": "p27_tiger.png",
+  "name": "호랑이",
+  "group": "탈것·사물·자연"
+ }
+]

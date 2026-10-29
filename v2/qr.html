@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>도장 도안 만들기 - 접속 QR</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  body { font-family: 'Noto Sans KR', system-ui, sans-serif; background: #fff; color: #1d1b16; margin: 0; padding: 32px; text-align: center; }
+  h1 { font-size: 40px; margin: 0 0 8px; }
+  p { font-size: 20px; color: #555; margin: 6px 0; }
+  #qr { display: inline-block; padding: 24px; border: 6px solid #1d1b16; border-radius: 24px; margin: 24px 0; }
+  #qr img, #qr canvas { width: 420px !important; height: 420px !important; }
+  .url { font-size: 22px; word-break: break-all; font-family: ui-monospace, monospace; }
+  .steps { text-align: left; display: inline-block; font-size: 22px; line-height: 1.7; margin-top: 16px; }
+  form { margin: 16px 0; font-size: 18px; }
+  input { font-size: 18px; padding: 6px 10px; width: 80px; }
+  @media print { form, .noprint { display: none; } }
+</style>
+</head>
+<body>
+  <h1>내 도장 도안 만들기</h1>
+  <p>패드 카메라로 QR을 찍어 접속하세요</p>
+  <form class="noprint" onsubmit="return false">
+    학급: <input id="cls" value="4-2"> <button onclick="make()">QR 다시 만들기</button>
+  </form>
+  <div id="qr"></div>
+  <div class="url" id="url"></div>
+  <div class="steps">
+    ① 번호와 이름을 적어요<br>
+    ② 그림을 넣어요 (파일 · 사진 · 붙여넣기)<br>
+    ③ 위아래 글자와 글씨체를 골라요<br>
+    ④ 찍힌 모습을 확인하고 <b>선생님께 보내기</b>!
+  </div>
+<script>
+  function make() {
+    const cls = document.getElementById('cls').value.trim();
+    const url = (location.origin + '/v2/') + (cls ? '?cls=' + encodeURIComponent(cls) : '');
+    document.getElementById('qr').innerHTML = '';
+    new QRCode(document.getElementById('qr'), { text: url, width: 420, height: 420, correctLevel: QRCode.CorrectLevel.M });
+    document.getElementById('url').textContent = url;
+  }
+  const p = new URLSearchParams(location.search); if (p.get('cls')) document.getElementById('cls').value = p.get('cls');
+  make();
+</script>
+</body>
+</html>
