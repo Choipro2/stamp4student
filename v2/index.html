@@ -258,7 +258,8 @@ const CONFIG = {
   SIZE: 1000,             // 출력 PNG 한 변 (px). 25mm 기준 40px/mm
 };
 const params = new URLSearchParams(location.search);
-const PRESET_CLS = (params.get('cls') || CONFIG.CLASS || localStorage.getItem('stamp.cls') || '').trim();
+const PATH_CLS = (location.pathname.match(/^\/([1-6]-\d{1,2})\/?$/) || [])[1] || ''; // 짧은 주소: /4-2
+const PRESET_CLS = (params.get('cls') || PATH_CLS || CONFIG.CLASS || localStorage.getItem('stamp.cls') || '').trim();
 if (params.get('gas')) CONFIG.GAS_URL = params.get('gas');
 function clsValue() { const g = document.getElementById('grade').value, b = document.getElementById('ban').value; return g && b ? `${g}-${b}` : ''; }
 function updateClsLabel() { const c = clsValue(); document.getElementById('clsLabel').textContent = c ? c.replace('-', '학년 ') + '반' : ''; }
