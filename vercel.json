@@ -3,7 +3,7 @@
   "trailingSlash": false,
   "rewrites": [
     {
-      "source": "/:cls([1-6]-[0-9]{1,2})",
+      "source": "/:cls([1-6]-?[0-9]{1,2})",
       "destination": "/v2/index.html"
     }
   ]

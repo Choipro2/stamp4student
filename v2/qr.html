@@ -35,7 +35,7 @@
 <script>
   function make() {
     const cls = document.getElementById('cls').value.trim();
-    const url = location.origin + '/' + (/^[1-6]-\d{1,2}$/.test(cls) ? cls : (cls ? 'v2/?cls=' + encodeURIComponent(cls) : 'v2/'));
+    const url = location.origin + '/' + (/^[1-6]-\d{1,2}$/.test(cls) ? cls.replace('-', '') : (cls ? 'v2/?cls=' + encodeURIComponent(cls) : 'v2/'));
     document.getElementById('qr').innerHTML = '';
     new QRCode(document.getElementById('qr'), { text: url, width: 420, height: 420, correctLevel: QRCode.CorrectLevel.M });
     document.getElementById('url').textContent = url;
