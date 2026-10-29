@@ -1,10 +1,582 @@
 {
-  "cleanUrls": true,
-  "trailingSlash": false,
-  "rewrites": [
-    {
-      "source": "/:cls([1-6]-?[0-9]{1,2})",
-      "destination": "/v2/index.html"
-    }
-  ]
+ "cleanUrls": true,
+ "trailingSlash": false,
+ "rewrites": [
+  {
+   "source": "/11",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/1-1",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/12",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/1-2",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/13",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/1-3",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/14",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/1-4",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/15",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/1-5",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/16",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/1-6",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/17",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/1-7",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/18",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/1-8",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/19",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/1-9",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/110",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/1-10",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/111",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/1-11",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/112",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/1-12",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/21",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/2-1",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/22",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/2-2",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/23",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/2-3",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/24",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/2-4",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/25",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/2-5",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/26",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/2-6",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/27",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/2-7",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/28",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/2-8",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/29",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/2-9",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/210",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/2-10",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/211",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/2-11",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/212",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/2-12",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/31",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/3-1",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/32",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/3-2",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/33",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/3-3",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/34",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/3-4",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/35",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/3-5",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/36",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/3-6",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/37",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/3-7",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/38",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/3-8",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/39",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/3-9",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/310",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/3-10",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/311",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/3-11",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/312",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/3-12",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/41",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/4-1",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/42",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/4-2",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/43",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/4-3",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/44",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/4-4",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/45",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/4-5",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/46",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/4-6",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/47",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/4-7",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/48",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/4-8",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/49",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/4-9",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/410",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/4-10",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/411",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/4-11",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/412",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/4-12",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/51",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/5-1",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/52",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/5-2",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/53",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/5-3",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/54",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/5-4",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/55",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/5-5",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/56",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/5-6",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/57",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/5-7",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/58",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/5-8",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/59",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/5-9",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/510",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/5-10",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/511",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/5-11",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/512",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/5-12",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/61",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/6-1",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/62",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/6-2",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/63",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/6-3",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/64",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/6-4",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/65",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/6-5",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/66",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/6-6",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/67",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/6-7",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/68",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/6-8",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/69",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/6-9",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/610",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/6-10",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/611",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/6-11",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/612",
+   "destination": "/v2/index.html"
+  },
+  {
+   "source": "/6-12",
+   "destination": "/v2/index.html"
+  }
+ ]
 }
