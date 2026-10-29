@@ -67,6 +67,7 @@
   .stkitem.active { border-color: #e4572e; }
   .stkitem img { max-width: 44px; max-height: 40px; object-fit: contain; }
   .stkx { position: absolute; top: -9px; right: -9px; width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; background: #d61f1f; color: #fff; font-size: 13px; font-weight: 900; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+  .txttools { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; }
   .stktools { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; }
   #previewWrap { position: relative; width: 100%; aspect-ratio: 1; background: #fff; border-radius: 14px; border: 1px solid var(--line); overflow: hidden; touch-action: none; }
   #preview { width: 100%; height: 100%; display: block; }
@@ -174,6 +175,14 @@
         </label>
       </div>
       <p class="hint">비워 두어도 돼요. 글자가 없으면 그림이 더 커져요.</p>
+      <div class="txttools" id="txtTools" style="display:none">
+        <div class="slider" id="txtTopRow"><span>위 글자 크기</span><input type="range" id="txtTopSize" min="40" max="200" value="100"><output id="txtTopOut">100%</output></div>
+        <div class="slider" id="txtBottomRow"><span>아래 글자 크기</span><input type="range" id="txtBottomSize" min="40" max="200" value="100"><output id="txtBottomOut">100%</output></div>
+        <div class="row" style="align-items:center">
+          <button class="btn ghost" id="btnTxtReset">↺ 글자 위치·크기 처음으로</button>
+        </div>
+        <p class="hint" style="margin-top:4px">미리보기에서 <b>글자를 손가락으로 끌어</b> 옮기고, 두 손가락으로 크기를 바꿀 수 있어요.</p>
+      </div>
       <div class="fontcards" id="fontCards" style="margin-top:10px"></div>
       <div style="margin-top:12px;font-weight:700;font-size:15px;color:var(--muted)">글자 모양</div>
       <div class="chips" id="styleChips" style="margin-top:6px"></div>
@@ -336,6 +345,9 @@ const state = {
   textStyle: localStorage.getItem('stamp.textStyle') || 'plain',
   stickers: [],     // {type:'shape'|'text'|'img', id|text|img, x, y, size(px, 세로), flip}
   activeStk: -1,    // 선택된 스티커 번호
+  txt: { top: { dx: 0, dy: 0, s: 1 }, bottom: { dx: 0, dy: 0, s: 1 } }, // 글자 위치·크기
+  txtBox: { top: null, bottom: null }, // 미리보기에서 누를 수 있는 글자 영역
+  activeTxt: null,  // 'top' | 'bottom'
 };
 
 const $ = id => document.getElementById(id);
@@ -392,7 +404,11 @@ const preview = $('preview'), pctx = preview.getContext('2d');
   });
   setHint();
 
-  ['topText', 'bottomText'].forEach(id => $(id).addEventListener('input', render));
+  ['topText', 'bottomText'].forEach(id => $(id).addEventListener('input', () => { syncTxtTools(); render(); }));
+  const txtSizeInput = (pos, id, out) => $(id).addEventListener('input', e => { state.txt[pos].s = e.target.value / 100; $(out).textContent = e.target.value + '%'; state.activeTxt = pos; render(); });
+  txtSizeInput('top', 'txtTopSize', 'txtTopOut'); txtSizeInput('bottom', 'txtBottomSize', 'txtBottomOut');
+  $('btnTxtReset').addEventListener('click', () => { state.txt = { top: { dx: 0, dy: 0, s: 1 }, bottom: { dx: 0, dy: 0, s: 1 } }; syncTxtTools(); render(); });
+  syncTxtTools();
   $('thr').addEventListener('input', e => { state.thr = +e.target.value; $('thrOut').textContent = e.target.value; reprocess(); });
   $('thick').addEventListener('input', e => { state.thick = +e.target.value; $('thickOut').textContent = e.target.value; reprocess(); });
   $('scale').addEventListener('input', e => { state.scale = e.target.value / 100; $('scaleOut').textContent = e.target.value + '%'; render(); });
@@ -712,14 +728,25 @@ function drawStamp(ctx, forExport) {
     return { size: min, ok: false };
   };
   const drawBand = (text, pos) => {
+    state.txtBox[pos] = null;
     if (!text) return true;
     const cy = pos === 'top' ? L.inner + L.band / 2 : S - L.inner - L.band / 2;
+    const T = state.txt[pos];
+    ctx.save(); ctx.translate(S / 2 + T.dx, cy + T.dy); ctx.scale(T.s, T.s); ctx.translate(-S / 2, -cy);
+    let bw = maxW;
+    const ok = drawBandInner(text, pos, cy, w => { bw = w; });
+    ctx.restore();
+    const hh = L.band * T.s, ww = Math.min(S, bw * T.s + 30);
+    state.txtBox[pos] = { x: S / 2 + T.dx - ww / 2, y: cy + T.dy - hh / 2, w: ww, h: hh };
+    return ok;
+  };
+  const drawBandInner = (text, pos, cy, setW) => {
     ctx.fillStyle = '#000'; ctx.strokeStyle = '#000'; ctx.lineJoin = 'round';
     switch (state.textStyle) {
       case 'curve': return drawCurvedText(ctx, text, pos, { S, outerY: pos === 'top' ? L.inner + 24 : S - L.inner - 24, maxW, setFont });
       case 'pill': case 'reverse': {
         const { size, ok } = fitSize(text, maxW - 130, 120);
-        const w = ctx.measureText(text).width + 100, h = size * 1.4, x = S / 2 - w / 2, y = cy - h / 2;
+        const w = ctx.measureText(text).width + 100, h = size * 1.4, x = S / 2 - w / 2, y = cy - h / 2; setW(w + 14);
         if (state.textStyle === 'pill') { ctx.lineWidth = 14; roundRect(ctx, x, y, w, h, h / 2); ctx.stroke(); ctx.fillStyle = '#000'; ctx.fillText(text, S / 2, cy + size * 0.05); }
         else { roundRect(ctx, x, y, w, h, h / 2); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillText(text, S / 2, cy + size * 0.05); ctx.fillStyle = '#000'; }
         return ok;
@@ -727,7 +754,7 @@ function drawStamp(ctx, forExport) {
       case 'ribbon': {
         const { size, ok } = fitSize(text, maxW * 0.6 - 60, 110);
         const h = size * 1.45, cw = Math.min(maxW - 2 * 90, Math.max(ctx.measureText(text).width + 80, maxW * 0.45));
-        const tw = Math.min(120, (maxW - cw) / 2), lx = S / 2 - cw / 2, rx = S / 2 + cw / 2, off = h * 0.22, lw = 14;
+        const tw = Math.min(120, (maxW - cw) / 2), lx = S / 2 - cw / 2, rx = S / 2 + cw / 2, off = h * 0.22, lw = 14; setW(cw + tw * 2 + 14);
         ctx.lineWidth = lw;
         // 양쪽 꼬리 (뒤쪽, 살짝 아래)
         const tail = (dir) => {
@@ -745,7 +772,7 @@ function drawStamp(ctx, forExport) {
         ctx.fillStyle = '#000'; setFont(size); ctx.fillText(text, S / 2, cy + size * 0.05, cw - 40);
         return ok;
       }
-      default: { const { size, ok } = fitSize(text, maxW); setFont(size); ctx.fillText(text, S / 2, cy, maxW); return ok; }
+      default: { const { size, ok } = fitSize(text, maxW); setFont(size); setW(Math.min(maxW, ctx.measureText(text).width)); ctx.fillText(text, S / 2, cy, maxW); return ok; }
     }
   };
   const okTop = drawBand(L.top, 'top');
@@ -762,6 +789,10 @@ function drawStamp(ctx, forExport) {
   }
   // 스티커
   for (const st of state.stickers) { const r = stickerRect(st); if (r) ctx.drawImage(r.c, r.x, r.y); }
+  if (!forExport && state.activeTxt && state.txtBox[state.activeTxt]) {
+    const r = state.txtBox[state.activeTxt];
+    ctx.save(); ctx.strokeStyle = '#2b6cdf'; ctx.lineWidth = 4; ctx.setLineDash([14, 10]); ctx.strokeRect(r.x, r.y, r.w, r.h); ctx.restore();
+  }
   if (!forExport && state.activeStk >= 0 && state.stickers[state.activeStk]) {
     const r = stickerRect(state.stickers[state.activeStk]);
     if (r) {
@@ -873,6 +904,14 @@ function refreshStkList() {
     d.appendChild(im); d.appendChild(x); box.appendChild(d);
   });
 }
+function syncTxtTools() {
+  const t = $('topText').value.trim(), b = $('bottomText').value.trim();
+  $('txtTools').style.display = (t || b) ? 'block' : 'none';
+  $('txtTopRow').style.display = t ? '' : 'none'; $('txtBottomRow').style.display = b ? '' : 'none';
+  const set = (pos, id, out) => { const v = Math.round(state.txt[pos].s * 100); $(id).value = v; $(out).textContent = v + '%'; };
+  set('top', 'txtTopSize', 'txtTopOut'); set('bottom', 'txtBottomSize', 'txtBottomOut');
+  if (state.activeTxt && !(state.activeTxt === 'top' ? t : b)) state.activeTxt = null;
+}
 function hasContent() { return !!(state.processed || state.stickers.length); }
 function selectSticker(i) {
   state.activeStk = i; const t = $('stkTools'), st = state.stickers[i];
@@ -961,6 +1000,8 @@ FONTS.forEach(f => document.fonts.load(`${f.weight} 40px ${f.css}`, '참 잘했�
   const pts = new Map(); let last = null, pinch0 = null, scale0 = 1, target = null; // target: 'img' | 스티커 번호
   const toCanvas = e => { const r = preview.getBoundingClientRect(); return { x: (e.clientX - r.left) * CONFIG.SIZE / r.width, y: (e.clientY - r.top) * CONFIG.SIZE / r.height }; };
   const hit = p => { for (let i = state.stickers.length - 1; i >= 0; i--) { const r = stickerRect(state.stickers[i]); if (r && p.x >= r.x - 12 && p.x <= r.x + r.w + 12 && p.y >= r.y - 12 && p.y <= r.y + r.h + 12) return i; } return -1; };
+  const hitTxt = p => { for (const pos of ['top', 'bottom']) { const r = state.txtBox[pos]; if (r && p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) return pos; } return null; };
+  const isTxt = t => typeof t === 'string' && t.startsWith('txt:');
   const setStkSize = (st, v) => { st.size = Math.min(320, Math.max(80, v)); $('stkSize').value = st.size; $('stkSizeOut').textContent = (st.size / 40).toFixed(1) + 'mm'; };
   preview.addEventListener('pointerdown', e => {
     const p = toCanvas(e);
@@ -970,20 +1011,23 @@ FONTS.forEach(f => document.fonts.load(`${f.weight} 40px ${f.css}`, '참 잘했�
     }
     if (pts.size === 0) {
       const i = hit(p);
-      if (i >= 0) { target = i; selectSticker(i); }
-      else { target = state.processed ? 'img' : null; if (state.activeStk >= 0) selectSticker(-1); }
+      const tb = hitTxt(p);
+      if (i >= 0) { target = i; state.activeTxt = null; selectSticker(i); }
+      else if (tb) { target = 'txt:' + tb; state.activeTxt = tb; if (state.activeStk >= 0) selectSticker(-1); }
+      else { target = state.processed ? 'img' : null; state.activeTxt = null; if (state.activeStk >= 0) selectSticker(-1); }
       render();
       if (target === null) return;
     }
     preview.setPointerCapture(e.pointerId); pts.set(e.pointerId, p);
     if (pts.size === 1) last = p;
-    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); scale0 = target === 'img' ? state.scale : state.stickers[target].size; }
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); scale0 = target === 'img' ? state.scale : isTxt(target) ? state.txt[target.slice(4)].s : state.stickers[target].size; }
   });
   preview.addEventListener('pointermove', e => {
     if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, toCanvas(e));
     if (pts.size === 1 && last) {
       const p = toCanvas(e), ddx = p.x - last.x, ddy = p.y - last.y; last = p;
       if (target === 'img') { state.dx += ddx; state.dy += ddy; }
+      else if (isTxt(target)) { const T = state.txt[target.slice(4)]; T.dx += ddx; T.dy += ddy; }
       else if (state.stickers[target]) { state.stickers[target].x += ddx; state.stickers[target].y += ddy; }
       render();
     } else if (pts.size === 2 && pinch0) {
@@ -991,7 +1035,8 @@ FONTS.forEach(f => document.fonts.load(`${f.weight} 40px ${f.css}`, '참 잘했�
       if (target === 'img') {
         state.scale = Math.min(1.4, Math.max(0.3, scale0 * d / pinch0));
         $('scale').value = Math.round(state.scale * 100); $('scaleOut').textContent = Math.round(state.scale * 100) + '%';
-      } else if (state.stickers[target]) setStkSize(state.stickers[target], scale0 * d / pinch0);
+      } else if (isTxt(target)) { state.txt[target.slice(4)].s = Math.min(2, Math.max(0.4, scale0 * d / pinch0)); syncTxtTools(); }
+      else if (state.stickers[target]) setStkSize(state.stickers[target], scale0 * d / pinch0);
       render();
     }
   });
