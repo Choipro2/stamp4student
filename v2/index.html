@@ -61,6 +61,12 @@
   .stk:active { border-color: var(--accent); }
   .stk canvas, .stk img { width: 48px; height: 48px; object-fit: contain; display: block; }
   .stk.wide { width: 120px; } .stk.wide img { width: 104px; }
+  .stklist { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; padding: 10px; border-radius: 12px; background: #fff6f4; border: 1px solid #f3c9c0; }
+  .stklist-label { font-size: 13px; font-weight: 700; color: var(--muted); margin-right: 2px; }
+  .stkitem { position: relative; width: 56px; height: 56px; border: 2px solid var(--line); border-radius: 12px; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .stkitem.active { border-color: #e4572e; }
+  .stkitem img { max-width: 44px; max-height: 40px; object-fit: contain; }
+  .stkx { position: absolute; top: -9px; right: -9px; width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; background: #d61f1f; color: #fff; font-size: 13px; font-weight: 900; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
   .stktools { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; }
   #previewWrap { position: relative; width: 100%; aspect-ratio: 1; background: #fff; border-radius: 14px; border: 1px solid var(--line); overflow: hidden; touch-action: none; }
   #preview { width: 100%; height: 100%; display: block; }
@@ -145,7 +151,8 @@
       <div id="imgStickerWrap">
         <div class="stkgrid" id="imgTray"><p class="hint" style="margin:0">스티커를 불러오는 중…</p></div>
       </div>
-      <p class="hint">스티커는 4개까지 넣을 수 있어요. 미리보기에서 손가락으로 끌어 옮기고, 두 손가락으로 크기를 바꿔요.</p>
+      <div class="stklist" id="stkList" style="display:none"></div>
+      <p class="hint">스티커는 4개까지 넣을 수 있어요. 미리보기에서 손가락으로 끌어 옮기고, 두 손가락으로 크기를 바꿔요. 지우려면 스티커를 누른 뒤 빨간 <b style="color:#d61f1f">✕</b>를 눌러요.</p>
       <div class="stktools" id="stkTools" style="display:none">
         <div class="slider"><span>스티커 크기</span><input type="range" id="stkSize" min="80" max="320" value="150"><output id="stkSizeOut"></output></div>
         <div class="row">
@@ -757,7 +764,14 @@ function drawStamp(ctx, forExport) {
   for (const st of state.stickers) { const r = stickerRect(st); if (r) ctx.drawImage(r.c, r.x, r.y); }
   if (!forExport && state.activeStk >= 0 && state.stickers[state.activeStk]) {
     const r = stickerRect(state.stickers[state.activeStk]);
-    if (r) { ctx.save(); ctx.strokeStyle = '#e4572e'; ctx.lineWidth = 4; ctx.setLineDash([14, 10]); ctx.strokeRect(r.x - 8, r.y - 8, r.w + 16, r.h + 16); ctx.restore(); }
+    if (r) {
+      ctx.save(); ctx.strokeStyle = '#e4572e'; ctx.lineWidth = 4; ctx.setLineDash([14, 10]); ctx.strokeRect(r.x - 8, r.y - 8, r.w + 16, r.h + 16);
+      const b = stkDelBadge(r);   // 오른쪽 위 빨간 ✕ (누르면 지워짐)
+      ctx.setLineDash([]); ctx.fillStyle = '#d61f1f'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 7; ctx.lineCap = 'round'; const k = b.r * 0.42;
+      ctx.beginPath(); ctx.moveTo(b.x - k, b.y - k); ctx.lineTo(b.x + k, b.y + k); ctx.moveTo(b.x + k, b.y - k); ctx.lineTo(b.x - k, b.y + k); ctx.stroke();
+      ctx.restore();
+    }
   }
   if (forExport) {
     // 안티앨리어싱 회색 제거 → 완전한 흑백
@@ -835,9 +849,34 @@ function stickerImage(st) {
   stkCache.set(key, c); return c;
 }
 function stickerRect(st) { const c = stickerImage(st); return c ? { x: st.x - c.width / 2, y: st.y - c.height / 2, w: c.width, h: c.height, c } : null; }
+function stkDelBadge(r) {
+  // 미리보기 밖으로 나가지 않게 안쪽으로 맞춤
+  const R = 34, S = CONFIG.SIZE;
+  return { x: Math.min(S - R - 4, Math.max(R + 4, r.x + r.w + 8)), y: Math.min(S - R - 4, Math.max(R + 4, r.y - 8)), r: R };
+}
+function deleteSticker(i) {
+  if (i < 0 || !state.stickers[i]) return;
+  state.stickers.splice(i, 1); selectSticker(-1); render(); updateButtons(); toast('스티커를 지웠어요');
+}
+function refreshStkList() {
+  const box = $('stkList'); if (!box) return;
+  box.innerHTML = '';
+  if (!state.stickers.length) { box.style.display = 'none'; return; }
+  box.style.display = 'flex';
+  const lab = document.createElement('span'); lab.className = 'stklist-label'; lab.textContent = '넣은 스티커'; box.appendChild(lab);
+  state.stickers.forEach((st, i) => {
+    const d = document.createElement('div'); d.className = 'stkitem' + (i === state.activeStk ? ' active' : '');
+    const im = document.createElement('img'); im.src = st.img ? st.img.src : ''; im.alt = '';
+    im.addEventListener('click', () => { selectSticker(i); render(); });
+    const x = document.createElement('button'); x.type = 'button'; x.className = 'stkx'; x.title = '이 스티커 지우기'; x.textContent = '✕';
+    x.addEventListener('click', e => { e.stopPropagation(); deleteSticker(i); });
+    d.appendChild(im); d.appendChild(x); box.appendChild(d);
+  });
+}
 function hasContent() { return !!(state.processed || state.stickers.length); }
 function selectSticker(i) {
   state.activeStk = i; const t = $('stkTools'), st = state.stickers[i];
+  refreshStkList();
   if (!st) { t.style.display = 'none'; return; }
   t.style.display = 'block'; $('stkSize').value = st.size; $('stkSizeOut').textContent = (st.size / 40).toFixed(1) + 'mm';
 }
@@ -861,7 +900,11 @@ function addSticker(st) {
 (function initStickers() {
   $('stkSize').addEventListener('input', () => { const st = state.stickers[state.activeStk]; if (!st) return; st.size = +$('stkSize').value; $('stkSizeOut').textContent = (st.size / 40).toFixed(1) + 'mm'; render(); });
   $('btnStkFlip').addEventListener('click', () => { const st = state.stickers[state.activeStk]; if (st) { st.flip = !st.flip; render(); } });
-  $('btnStkDel').addEventListener('click', () => { if (state.activeStk < 0) return; state.stickers.splice(state.activeStk, 1); selectSticker(-1); render(); updateButtons(); });
+  $('btnStkDel').addEventListener('click', () => deleteSticker(state.activeStk));
+  // 키보드 Delete / Backspace 로도 선택한 스티커 지우기 (글자 입력 중일 때는 제외)
+  document.addEventListener('keydown', e => {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && state.activeStk >= 0 && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); deleteSticker(state.activeStk); }
+  });
   $('btnStkClear').addEventListener('click', () => { state.stickers = []; selectSticker(-1); render(); updateButtons(); });
   // 스티커 목록: docs/stickers/stickers.json
   fetch('stickers/stickers.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : []).then(list => {
@@ -921,6 +964,10 @@ FONTS.forEach(f => document.fonts.load(`${f.weight} 40px ${f.css}`, '참 잘했�
   const setStkSize = (st, v) => { st.size = Math.min(320, Math.max(80, v)); $('stkSize').value = st.size; $('stkSizeOut').textContent = (st.size / 40).toFixed(1) + 'mm'; };
   preview.addEventListener('pointerdown', e => {
     const p = toCanvas(e);
+    if (pts.size === 0 && state.activeStk >= 0) {
+      const r = stickerRect(state.stickers[state.activeStk]);
+      if (r) { const b = stkDelBadge(r); if (Math.hypot(p.x - b.x, p.y - b.y) <= b.r + 22) { deleteSticker(state.activeStk); return; } }
+    }
     if (pts.size === 0) {
       const i = hit(p);
       if (i >= 0) { target = i; selectSticker(i); }
