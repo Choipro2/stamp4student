@@ -271,7 +271,7 @@ const CONFIG = {
   CLASS: '',              // 기본 학급(비우면 직접 선택). 주소에 ?cls=4-3 을 붙이면 그 값이 미리 선택됨
   GRADES: [1, 2, 3, 4, 5, 6],
   BANS: Array.from({ length: 12 }, (_, i) => i + 1),
-  NUMBERS: [...Array.from({ length: 20 }, (_, i) => i + 1), ...Array.from({ length: 20 }, (_, i) => i + 41)], // 선택 가능한 번호: 1~20, 41~60
+  NUMBERS: [...Array.from({ length: 20 }, (_, i) => i + 1), ...Array.from({ length: 40 }, (_, i) => i + 41)], // 선택 가능한 번호: 1~20, 41~80
   SIZE: 1000,             // 출력 PNG 한 변 (px). 25mm 기준 40px/mm
 };
 const params = new URLSearchParams(location.search);
@@ -353,6 +353,24 @@ const state = {
 const $ = id => document.getElementById(id);
 const preview = $('preview'), pctx = preview.getContext('2d');
 
+// ===== 학년·반·번호로 이름 자동 입력 =====
+// 명단은 선생님 앱스 스크립트(Roster.gs)에만 있고 이 페이지에는 없다.
+// 명단에 있는 학년이면: 찾으면 이름, 없으면 빈칸. 명단에 없는 학년이면 이름칸을 건드리지 않는다.
+let nameReq = 0;
+async function lookupName() {
+  const c = clsValue(), n = $('num').value;
+  if (!c || !n || !CONFIG.GAS_URL) return;
+  const my = ++nameReq;
+  try {
+    const r = await fetch(CONFIG.GAS_URL + '?action=name&cls=' + encodeURIComponent(c) + '&num=' + encodeURIComponent(n));
+    const d = await r.json();
+    if (my !== nameReq || !d || !d.known) return;
+    $('name').value = d.name || '';
+    localStorage.setItem('stamp.name', $('name').value);
+    updateButtons();
+  } catch (e) { /* 연결이 안 되면 학생이 직접 입력 */ }
+}
+
 // ===== 입력 UI 구성 =====
 (function initInputs() {
   const g = $('grade'), b = $('ban');
@@ -361,12 +379,12 @@ const preview = $('preview'), pctx = preview.getContext('2d');
   const m = PRESET_CLS.match(/^(\d+)-(\d+)$/);
   if (m) { g.value = m[1]; b.value = m[2]; }
   const onCls = () => { const c = clsValue(); if (c) localStorage.setItem('stamp.cls', c); updateClsLabel(); updateButtons(); };
-  g.addEventListener('change', onCls); b.addEventListener('change', onCls); updateClsLabel();
+  g.addEventListener('change', () => { onCls(); lookupName(); }); b.addEventListener('change', () => { onCls(); lookupName(); }); updateClsLabel();
   const sel = $('num');
   sel.innerHTML = '<option value="">번호</option>' + CONFIG.NUMBERS.map(n => `<option value="${n}">${n}번</option>`).join('');
   sel.value = localStorage.getItem('stamp.num') || '';
   $('name').value = localStorage.getItem('stamp.name') || '';
-  sel.addEventListener('change', () => { localStorage.setItem('stamp.num', sel.value); updateButtons(); });
+  sel.addEventListener('change', () => { localStorage.setItem('stamp.num', sel.value); updateButtons(); lookupName(); });
   $('name').addEventListener('input', () => { localStorage.setItem('stamp.name', $('name').value); updateButtons(); });
 
   const fc = $('fontCards');

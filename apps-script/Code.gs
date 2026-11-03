@@ -35,8 +35,27 @@ function doPost(e) {
 }
 
 // 주소를 브라우저로 열었을 때 연결 확인용
-function doGet() {
+function doGet(e) {
+  const p = (e && e.parameter) || {};
+  if (p.action === 'name') return lookupName_(p.cls, p.num);
   return reply_({ ok: true, status: 'ok', message: '스탬프 도안 저장 서버가 동작 중입니다.' });
+}
+
+/* ===================== v2: 학년·반·번호로 이름 찾기 =====================
+ * 명단은 같은 프로젝트의 별도 파일 Roster.gs 에 ROSTER 로 둡니다. (GitHub에는 올리지 않음)
+ *   const ROSTER = { '3-1-1': '김민준', ... };   // '학년-반-번호': '이름'
+ * known: 그 학년 명단이 있으면 true → 페이지가 이름칸을 채우거나(없으면 빈칸) 비웁니다.
+ *        명단이 없는 학년이면 false → 페이지는 이름칸을 그대로 둡니다.
+ */
+function lookupName_(cls, num) {
+  const roster = (typeof ROSTER !== 'undefined') ? ROSTER : {};
+  const m = String(cls || '').match(/^(\d+)-(\d+)$/);
+  const n = parseInt(num, 10);
+  if (!m || !n) return reply_({ ok: true, known: false, name: '' });
+  const grade = m[1] + '-';
+  const known = Object.keys(roster).some(function (k) { return k.indexOf(grade) === 0; });
+  const name = roster[m[1] + '-' + parseInt(m[2], 10) + '-' + n] || '';
+  return reply_({ ok: true, known: known, name: known ? name : '' });
 }
 
 /* ===================== v1 ===================== */
