@@ -138,5 +138,245 @@
   "file": "p27_tiger.png",
   "name": "호랑이",
   "group": "탈것·사물·자연"
+ },
+ {
+  "file": "p28_cat.png",
+  "name": "고양이",
+  "group": "동물 실루엣",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p29_sitting_dog.png",
+  "name": "강아지",
+  "group": "동물 실루엣",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p30_rabbit.png",
+  "name": "토끼",
+  "group": "동물 실루엣",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p31_elephant.png",
+  "name": "코끼리",
+  "group": "동물 실루엣",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p32_turtle.png",
+  "name": "거북",
+  "group": "동물 실루엣",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p33_penguin.png",
+  "name": "펭귄",
+  "group": "동물 실루엣",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p34_dolphin.png",
+  "name": "돌고래",
+  "group": "동물 실루엣",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p35_barn_owl.png",
+  "name": "올빼미",
+  "group": "동물 실루엣",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p36_squirrel.png",
+  "name": "다람쥐",
+  "group": "동물 실루엣",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p37_snail.png",
+  "name": "달팽이",
+  "group": "동물 실루엣",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p38_soccer_ball.png",
+  "name": "축구공",
+  "group": "운동·놀이",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p39_basketball_ball.png",
+  "name": "농구공",
+  "group": "운동·놀이",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p40_volleyball_ball.png",
+  "name": "배구공",
+  "group": "운동·놀이",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p41_baseball_glove.png",
+  "name": "야구 글러브",
+  "group": "운동·놀이",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p42_ping_pong_bat.png",
+  "name": "탁구",
+  "group": "운동·놀이",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p43_shuttlecock.png",
+  "name": "배드민턴 공",
+  "group": "운동·놀이",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p44_trophy.png",
+  "name": "트로피",
+  "group": "운동·놀이",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p45_sport_medal.png",
+  "name": "메달",
+  "group": "운동·놀이",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p46_skateboard.png",
+  "name": "스케이트보드",
+  "group": "운동·놀이",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p47_roller_skate.png",
+  "name": "롤러스케이트",
+  "group": "운동·놀이",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p48_shiny_apple.png",
+  "name": "사과",
+  "group": "음식·과일",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p49_banana.png",
+  "name": "바나나",
+  "group": "음식·과일",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p50_cherry.png",
+  "name": "체리",
+  "group": "음식·과일",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p51_strawberry.png",
+  "name": "딸기",
+  "group": "음식·과일",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p52_pear.png",
+  "name": "배",
+  "group": "음식·과일",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p53_carrot.png",
+  "name": "당근",
+  "group": "음식·과일",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p54_cupcake.png",
+  "name": "컵케이크",
+  "group": "음식·과일",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p55_donut.png",
+  "name": "도넛",
+  "group": "음식·과일",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p56_ice_cream_cone.png",
+  "name": "아이스크림",
+  "group": "음식·과일",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p57_hamburger.png",
+  "name": "햄버거",
+  "group": "음식·과일",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p58_sun.png",
+  "name": "해",
+  "group": "자연·우주",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p59_moon.png",
+  "name": "달",
+  "group": "자연·우주",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p60_rainbow_star.png",
+  "name": "별똥별",
+  "group": "자연·우주",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p61_pine_tree.png",
+  "name": "나무",
+  "group": "자연·우주",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p62_palm_tree.png",
+  "name": "야자수",
+  "group": "자연·우주",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p63_sunflower.png",
+  "name": "해바라기",
+  "group": "자연·우주",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p64_maple_leaf.png",
+  "name": "단풍잎",
+  "group": "자연·우주",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p65_spotted_mushroom.png",
+  "name": "버섯",
+  "group": "자연·우주",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p66_rocket.png",
+  "name": "로켓",
+  "group": "자연·우주",
+  "credit": "game-icons.net (CC BY 3.0)"
+ },
+ {
+  "file": "p67_ringed_planet.png",
+  "name": "토성",
+  "group": "자연·우주",
+  "credit": "game-icons.net (CC BY 3.0)"
  }
 ]

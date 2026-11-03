@@ -534,6 +534,13 @@ function renderPresets() {
     });
     grid.appendChild(card);
   });
+  // 무료 라이선스 그림 묶음이면 출처 표시
+  const credits = [...new Set(PRESETS.list.filter(p => p.group === PRESETS.group && p.credit).map(p => p.credit))];
+  if (credits.length) {
+    const c = document.createElement('p'); c.className = 'hint'; c.style.cssText = 'grid-column:1/-1;text-align:center;margin:4px 0 0';
+    c.innerHTML = '그림 출처: <a href="https://game-icons.net" target="_blank" rel="noopener">' + credits.join(', ') + '</a>';
+    grid.appendChild(c);
+  }
   grid.scrollTop = 0;
 }
 
