@@ -128,6 +128,7 @@
         <button class="btn big" id="btnCam">📷 사진 찍기<small>종이에 그린 그림 찍기</small></button>
         <button class="btn big" id="btnPaste">📋 붙여넣기<small>캡처한 그림 넣기</small></button>
         <button class="btn big" id="btnPreset">🎨 도안 고르기<small>준비된 그림에서 고르기</small></button>
+        <button class="btn big" id="btnShared">🗂️ 선생님 그림<small>선생님들이 모은 그림</small></button>
       </div>
       <input type="file" id="fileInput" accept="image/*" hidden>
       <input type="file" id="camInput" accept="image/*" capture="environment" hidden>
@@ -192,6 +193,7 @@
     <div class="card">
       <h2><span class="n">5</span>테두리</h2>
       <div class="borders" id="borderCards"></div>
+      <p class="hint" id="borderHint"></p>
     </div>
   </section>
 
@@ -243,6 +245,17 @@
 </div>
 
 <!-- 준비된 도안 -->
+<div class="modal" id="sharedModal">
+  <div class="box">
+    <div class="pgroups" id="sharedGroups"></div>
+    <div class="pgrid" id="sharedGrid"><p class="hint" style="grid-column:1/-1;text-align:center">불러오는 중…</p></div>
+    <div class="row">
+      <button class="btn ghost" id="sharedReload">🔄 새로고침</button>
+      <button class="btn ghost" id="sharedClose">닫기</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="presetModal">
   <div class="box">
     <div class="pgroups" id="presetGroups"></div>
@@ -295,6 +308,17 @@ const TEXT_STYLES = [
   { id: 'pill',    name: '둥근 상자', hint: '둥근 테두리 상자 안에 글자가 들어가요.' },
   { id: 'reverse', name: '검정 띠',  hint: '검정 띠 위에 흰 글자예요. 굵은 글씨체로 하고 글자 수를 적게 해야 잘 찍혀요.' },
 ];
+// 원형 도장 학년: 이 학년을 고르면 테두리가 원형으로 바뀐다
+const CIRCLE_GRADES = [3];
+function isCircle() { return CIRCLE_GRADES.includes(+(document.getElementById('grade') || {}).value); }
+const CIRCLE_BORDERS = [
+  { id: 'c_single', name: '원 한 줄' },
+  { id: 'c_double', name: '원 두 줄' },
+  { id: 'c_stitch', name: '원 바느질' },
+  { id: 'c_dots',   name: '원 점' },
+  { id: 'none',     name: '없음' },
+];
+const CIRCLE_R = 440; // 원형일 때 내용이 들어가는 반지름(px, 1000 기준)
 const BORDERS = [
   { id: 'single', name: '한 줄' },
   { id: 'double', name: '두 줄' },
@@ -308,7 +332,7 @@ const BORDERS = [
   { id: 'none',   name: '없음' },
 ];
 // 테두리 종류별로 안쪽 내용이 시작하는 위치(px). 없으면 95.
-const BORDER_INNER = { none: 60, band_heart: 130, band_star: 130 };
+const BORDER_INNER = { none: 60, band_heart: 130, band_star: 130, c_single: 150, c_double: 170, c_stitch: 170, c_dots: 150 };
 
 // 작은 모양(하트·별 등). 가운데가 (0,0)이고 한 변이 1인 상자 안에 검정으로 그린다. 테두리 띠에 쓰인다. (모양 스티커 UI는 2026-10-28 제거)
 const SHAPES = [
@@ -379,7 +403,7 @@ async function lookupName() {
   const m = PRESET_CLS.match(/^(\d+)-(\d+)$/);
   if (m) { g.value = m[1]; b.value = m[2]; }
   const onCls = () => { const c = clsValue(); if (c) localStorage.setItem('stamp.cls', c); updateClsLabel(); updateButtons(); };
-  g.addEventListener('change', () => { onCls(); lookupName(); }); b.addEventListener('change', () => { onCls(); lookupName(); }); updateClsLabel();
+  g.addEventListener('change', () => { onCls(); lookupName(); buildBorders(); render(); }); b.addEventListener('change', () => { onCls(); lookupName(); }); updateClsLabel();
   const sel = $('num');
   sel.innerHTML = '<option value="">번호</option>' + CONFIG.NUMBERS.map(n => `<option value="${n}">${n}번</option>`).join('');
   sel.value = localStorage.getItem('stamp.num') || '';
@@ -396,22 +420,10 @@ async function lookupName() {
     fc.appendChild(d);
   });
 
-  const bc = $('borderCards');
-  if (!BORDERS.some(b => b.id === state.border)) state.border = 'single';
-  BORDERS.forEach(b => {
-    const d = document.createElement('div');
-    d.className = 'bcard' + (b.id === state.border ? ' active' : '');
-    const c = document.createElement('canvas'); c.width = c.height = 200;
-    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 200, 200); x.scale(0.2, 0.2);
-    if (b.id === 'none') { x.strokeStyle = '#bbb'; x.lineWidth = 8; x.setLineDash([20, 20]); x.strokeRect(50, 50, 900, 900); }
-    else drawBorder(x, CONFIG.SIZE, b.id);
-    const sp = document.createElement('span'); sp.textContent = b.name;
-    d.append(c, sp);
-    d.addEventListener('click', () => { state.border = b.id; localStorage.setItem('stamp.border', b.id); bc.querySelectorAll('.bcard').forEach(x => x.classList.toggle('active', x === d)); render(); });
-    bc.appendChild(d);
-  });
+  buildBorders();
 
   const sc = $('styleChips');
+
   const setHint = () => { const st = TEXT_STYLES.find(x => x.id === state.textStyle); $('styleHint').textContent = st ? st.hint : ''; };
   TEXT_STYLES.forEach(t => {
     const d = document.createElement('div');
@@ -492,6 +504,65 @@ function loadBlob(blob, kind) {
 // ===== 준비된 도안 (docs/presets/presets.json) =====
 const PRESETS = { list: null, group: null };
 $('btnPreset').addEventListener('click', openPresets);
+
+// ===== 선생님 그림 (선생님 드라이브 '도장도안_공유그림' 폴더, 앱스 스크립트 경유) =====
+const SHARED = { groups: null, group: null };
+$('btnShared').addEventListener('click', () => openShared(false));
+$('sharedReload').addEventListener('click', () => openShared(true));
+$('sharedClose').addEventListener('click', () => $('sharedModal').classList.remove('open'));
+$('sharedModal').addEventListener('click', e => { if (e.target === $('sharedModal')) $('sharedModal').classList.remove('open'); });
+async function openShared(force) {
+  $('sharedModal').classList.add('open');
+  if (SHARED.groups && !force) { renderShared(); return; }
+  $('sharedGroups').innerHTML = '';
+  $('sharedGrid').innerHTML = '<p class="hint" style="grid-column:1/-1;text-align:center">선생님 그림을 불러오는 중… (조금 걸릴 수 있어요)</p>';
+  try {
+    if (!CONFIG.GAS_URL) throw new Error('주소 없음');
+    const r = await fetch(CONFIG.GAS_URL + '?action=shared');
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || '오류');
+    SHARED.groups = (d.groups || []).filter(g => g.items && g.items.length);
+  } catch (err) {
+    $('sharedGrid').innerHTML = '<p class="hint" style="grid-column:1/-1;text-align:center">그림을 불러오지 못했어요. 인터넷을 확인하고 🔄 새로고침을 눌러 보세요.</p>';
+    return;
+  }
+  if (!SHARED.groups.length) {
+    $('sharedGrid').innerHTML = '<p class="hint" style="grid-column:1/-1;text-align:center">아직 올라온 그림이 없어요.</p>';
+    return;
+  }
+  if (!SHARED.groups.some(g => g.name === SHARED.group)) SHARED.group = SHARED.groups[0].name;
+  const gc = $('sharedGroups');
+  SHARED.groups.forEach(g => {
+    const d = document.createElement('div'); d.className = 'chip' + (g.name === SHARED.group ? ' active' : ''); d.textContent = g.name + ' (' + g.items.length + ')';
+    d.addEventListener('click', () => { SHARED.group = g.name; gc.querySelectorAll('.chip').forEach(x => x.classList.toggle('active', x === d)); renderShared(); });
+    gc.appendChild(d);
+  });
+  renderShared();
+}
+function renderShared() {
+  const grid = $('sharedGrid'); grid.innerHTML = '';
+  const g = (SHARED.groups || []).find(x => x.name === SHARED.group); if (!g) return;
+  g.items.forEach(it => {
+    const card = document.createElement('div'); card.className = 'pcard';
+    const img = document.createElement('img'); img.alt = it.name; img.loading = 'lazy';
+    if (it.thumb) img.src = it.thumb; else { img.style.background = '#f3f0ea'; }
+    const name = document.createElement('div'); name.className = 'name'; name.textContent = it.name;
+    card.append(img, name);
+    card.addEventListener('click', async () => {
+      toast('그림을 가져오는 중…');
+      try {
+        const r = await fetch(CONFIG.GAS_URL + '?action=sharedImg&id=' + encodeURIComponent(it.id));
+        const d = await r.json(); if (!d.ok || !d.data) throw new Error(d.error || '오류');
+        const blob = await (await fetch(d.data)).blob();
+        loadBlob(new File([blob], it.name, { type: blob.type || 'image/png' }), 'preset');
+        $('sharedModal').classList.remove('open');
+        toast(it.name + ' 그림을 넣었어요');
+      } catch (err) { toast('그림을 가져오지 못했어요. 다시 눌러 보세요'); }
+    });
+    grid.appendChild(card);
+  });
+  grid.scrollTop = 0;
+}
 $('presetClose').addEventListener('click', () => $('presetModal').classList.remove('open'));
 $('presetModal').addEventListener('click', e => { if (e.target === $('presetModal')) $('presetModal').classList.remove('open'); });
 async function openPresets() {
@@ -725,13 +796,48 @@ function bbox(bin, W, H) {
   return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
 }
 
+
+// 테두리 카드: 원형 학년이면 원형 테두리들, 아니면 네모 테두리들
+var bordersCircle; // (선언이 아래에 있어도 초기화로 덮어쓰지 않도록 값 없이 선언)
+function buildBorders() {
+  const circle = isCircle();
+  const list = circle ? CIRCLE_BORDERS : BORDERS;
+  if (bordersCircle !== undefined && bordersCircle !== circle) state.border = circle ? 'c_single' : 'single';
+  bordersCircle = circle;
+  if (!list.some(b => b.id === state.border)) state.border = circle ? 'c_single' : 'single';
+  const bc = $('borderCards'); bc.innerHTML = '';
+  list.forEach(b => {
+    const d = document.createElement('div');
+    d.className = 'bcard' + (b.id === state.border ? ' active' : '');
+    const c = document.createElement('canvas'); c.width = c.height = 200;
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 200, 200); x.scale(0.2, 0.2);
+    if (b.id === 'none') { x.strokeStyle = '#bbb'; x.lineWidth = 8; x.setLineDash([20, 20]); if (circle) { x.beginPath(); x.arc(500, 500, 450, 0, Math.PI * 2); x.stroke(); } else x.strokeRect(50, 50, 900, 900); }
+    else drawBorder(x, CONFIG.SIZE, b.id);
+    const sp = document.createElement('span'); sp.textContent = b.name;
+    d.append(c, sp);
+    d.addEventListener('click', () => { state.border = b.id; localStorage.setItem('stamp.border', b.id); bc.querySelectorAll('.bcard').forEach(x => x.classList.toggle('active', x === d)); render(); });
+    bc.appendChild(d);
+  });
+
+  const hint = $('borderHint'); if (hint) hint.textContent = circle ? '3학년은 원형 도장이에요. 원 안에 들어가도록 글자와 그림이 맞춰져요.' : '';
+}
+
 // ===== 도안 그리기 =====
 function layout() {
   const S = CONFIG.SIZE, top = $('topText').value.trim(), bottom = $('bottomText').value.trim();
-  const inner = BORDER_INNER[state.border] ?? 95;  // 테두리 안쪽 시작 위치
-  const band = { plain: 170, curve: 265, ribbon: 215, pill: 190, reverse: 190 }[state.textStyle] || 170; // 글자 띠 높이
+  const inner = (isCircle() && state.border === 'none') ? 150 : (BORDER_INNER[state.border] ?? 95);  // 테두리 안쪽 시작 위치
+  const band = (isCircle() && state.textStyle === 'curve') ? 210 : ({ plain: 170, curve: 265, ribbon: 215, pill: 190, reverse: 190 }[state.textStyle] || 170); // 글자 띠 높이
   const imgTop = top ? inner + band : inner, imgBottom = bottom ? S - inner - band : S - inner;
-  return { S, top, bottom, inner, band, img: { x: inner, y: imgTop, w: S - inner * 2, h: imgBottom - imgTop } };
+  const img = { x: inner, y: imgTop, w: S - inner * 2, h: imgBottom - imgTop };
+  const circle = isCircle();
+  if (circle) {
+    // 그림 영역의 네 모서리가 원(반지름 CIRCLE_R) 안에 들어오도록 가로를 줄인다
+    const cy = img.y + img.h / 2 - S / 2, b = img.h / 2;
+    const far = Math.abs(cy) + b, a = Math.sqrt(Math.max(0, CIRCLE_R * CIRCLE_R - far * far));
+    if (a * 2 < img.w) { img.x = S / 2 - a; img.w = a * 2; }
+    if (img.w < 200) { const k = 0.5; img.y += img.h * (1 - k) / 2; img.h *= k; const a2 = Math.sqrt(Math.max(0, CIRCLE_R * CIRCLE_R - Math.pow(Math.abs(cy) + img.h / 2, 2))); img.x = S / 2 - a2; img.w = a2 * 2; }
+  }
+  return { S, top, bottom, inner, band, circle, img };
 }
 
 function drawStamp(ctx, forExport) {
@@ -746,7 +852,8 @@ function drawStamp(ctx, forExport) {
 
   // 글자
   const f = FONTS.find(x => x.id === state.font) || FONTS[0];
-  const maxW = S - L.inner * 2 - 20;
+  let maxW = S - L.inner * 2 - 20;
+  const chordAt = (cy, half) => { const far = Math.abs(cy - S / 2) + half; return 2 * Math.sqrt(Math.max(0, CIRCLE_R * CIRCLE_R - far * far)) - 20; };
   const setFont = size => { ctx.font = `${f.weight} ${size}px ${f.css}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; };
   const fitSize = (text, width, start = 130, min = 56) => {
     for (let size = start; size >= min; size -= 4) { setFont(size); if (ctx.measureText(text).width <= width) return { size, ok: true }; }
@@ -757,18 +864,25 @@ function drawStamp(ctx, forExport) {
     if (!text) return true;
     const cy = pos === 'top' ? L.inner + L.band / 2 : S - L.inner - L.band / 2;
     const T = state.txt[pos];
+    const bandMaxW = maxW;
+    if (L.circle && state.textStyle !== 'curve') maxW = Math.max(240, Math.min(bandMaxW, chordAt(cy, L.band * 0.45)));
     ctx.save(); ctx.translate(S / 2 + T.dx, cy + T.dy); ctx.scale(T.s, T.s); ctx.translate(-S / 2, -cy);
     let bw = maxW;
     const ok = drawBandInner(text, pos, cy, w => { bw = w; });
     ctx.restore();
     const hh = L.band * T.s, ww = Math.min(S, bw * T.s + 30);
     state.txtBox[pos] = { x: S / 2 + T.dx - ww / 2, y: cy + T.dy - hh / 2, w: ww, h: hh };
+    maxW = bandMaxW;
     return ok;
   };
   const drawBandInner = (text, pos, cy, setW) => {
     ctx.fillStyle = '#000'; ctx.strokeStyle = '#000'; ctx.lineJoin = 'round';
     switch (state.textStyle) {
-      case 'curve': return drawCurvedText(ctx, text, pos, { S, outerY: pos === 'top' ? L.inner + 24 : S - L.inner - 24, maxW, setFont });
+      case 'curve': {
+        const outerY = pos === 'top' ? L.inner + 24 : S - L.inner - 24;
+        if (L.circle) { const R = Math.abs(S / 2 - outerY); return drawCurvedText(ctx, text, pos, { S, outerY, maxW: R * 2.3, setFont, R }); }
+        return drawCurvedText(ctx, text, pos, { S, outerY, maxW, setFont });
+      }
       case 'pill': case 'reverse': {
         const { size, ok } = fitSize(text, maxW - 130, 120);
         const w = ctx.measureText(text).width + 100, h = size * 1.4, x = S / 2 - w / 2, y = cy - h / 2; setW(w + 14);
@@ -844,6 +958,12 @@ function drawBorder(ctx, S, id) {
   const around = (inset, n, fn) => { const step = (S - 2 * inset) / n; for (let i = 0; i < n; i++) { const t = inset + i * step; for (const [x, y] of [[t, inset], [S - t, S - inset], [inset, S - t], [S - inset, t]]) fn(x, y); } };
   switch (id) {
     case 'single': ctx.lineJoin = 'miter'; ctx.lineWidth = 20; ctx.strokeRect(40, 40, S - 80, S - 80); break;
+    case 'c_single': ctx.lineWidth = 22; ctx.beginPath(); ctx.arc(S / 2, S / 2, S / 2 - 40, 0, Math.PI * 2); ctx.stroke(); break;
+    case 'c_double': ctx.lineWidth = 22; ctx.beginPath(); ctx.arc(S / 2, S / 2, S / 2 - 40, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 11; ctx.beginPath(); ctx.arc(S / 2, S / 2, S / 2 - 82, 0, Math.PI * 2); ctx.stroke(); break;
+    case 'c_stitch': ctx.lineWidth = 14; ctx.beginPath(); ctx.arc(S / 2, S / 2, S / 2 - 36, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 16; ctx.setLineDash([40, 26]); ctx.beginPath(); ctx.arc(S / 2, S / 2, S / 2 - 80, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); break;
+    case 'c_dots': { const n = 48, r = S / 2 - 52; for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; ctx.beginPath(); ctx.arc(S / 2 + r * Math.cos(a), S / 2 + r * Math.sin(a), 11, 0, Math.PI * 2); ctx.fill(); } break; }
     case 'double': ctx.lineJoin = 'miter'; ctx.lineWidth = 20; ctx.strokeRect(40, 40, S - 80, S - 80); ctx.lineWidth = 10; ctx.strokeRect(80, 80, S - 160, S - 160); break;
     case 'round': ctx.lineWidth = 20; roundRect(ctx, 40, 40, S - 80, S - 80, 90); ctx.stroke(); break;
     case 'stitch':
@@ -984,7 +1104,7 @@ function addSticker(st) {
 
 function drawCurvedText(ctx, text, pos, o) {
   // 원호를 따라 한 글자씩 배치. 위 글자는 위로 볼록, 아래 글자는 아래로 볼록, 글자는 항상 바로 선 방향.
-  const R = 900, chars = [...text];
+  const R = o.R || 900, chars = [...text];
   const spacing = 0.08; // 글자 사이 띄움 (글자 크기 비율)
   const widthOf = sz => { o.setFont(sz); let w = 0; for (const ch of chars) w += ctx.measureText(ch).width + sz * spacing; return w - sz * spacing; };
   let size = 120, ok = true;

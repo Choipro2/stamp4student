@@ -38,7 +38,93 @@ function doPost(e) {
 function doGet(e) {
   const p = (e && e.parameter) || {};
   if (p.action === 'name') return lookupName_(p.cls, p.num);
+  if (p.action === 'shared') return listShared_();
+  if (p.action === 'sharedImg') return sharedImage_(p.id);
   return reply_({ ok: true, status: 'ok', message: '스탬프 도안 저장 서버가 동작 중입니다.' });
+}
+
+/* ===================== v2: 선생님 그림 (공유 그림 폴더) =====================
+ * 내 드라이브의 「도장도안_공유그림」 폴더에 있는 그림을 학생 화면의 '선생님 그림'에 보여 줍니다.
+ * - 폴더 바로 아래 그림 → '선생님 그림' 묶음
+ * - 폴더 안의 하위 폴더 → 하위 폴더 이름이 묶음 이름 (예: 동물, 운동)
+ * 다른 선생님과 이 폴더를 '편집자'로 공유하면, 그 선생님이 넣은 그림도 함께 보입니다.
+ * 이 폴더 밖의 파일은 절대 내보내지 않습니다.
+ */
+const SHARED_FOLDER_NAME = '도장도안_공유그림';
+const SHARED_MAX_FILES = 300;
+
+function sharedRoot_() {
+  const it = DriveApp.getFoldersByName(SHARED_FOLDER_NAME);
+  return it.hasNext() ? it.next() : DriveApp.createFolder(SHARED_FOLDER_NAME);
+}
+
+function isImage_(f) {
+  return /^image\/(png|jpe?g|gif|webp|bmp)$/i.test(f.getMimeType());
+}
+
+function thumbOf_(f) {
+  try {
+    const t = f.getThumbnail();
+    if (t) return 'data:' + (t.getContentType() || 'image/png') + ';base64,' + Utilities.base64Encode(t.getBytes());
+  } catch (err) {}
+  return '';
+}
+
+function collect_(folder, groupName, out, count) {
+  const items = [];
+  const files = folder.getFiles();
+  while (files.hasNext() && count.n < SHARED_MAX_FILES) {
+    const f = files.next();
+    if (!isImage_(f)) continue;
+    count.n++;
+    items.push({ id: f.getId(), name: f.getName().replace(/\.[^.]+$/, ''), thumb: thumbOf_(f) });
+  }
+  items.sort(function (a, b) { return a.name.localeCompare(b.name, 'ko'); });
+  if (items.length) out.push({ name: groupName, items: items });
+}
+
+function listShared_() {
+  try {
+    const root = sharedRoot_();
+    const out = [], count = { n: 0 };
+    collect_(root, '선생님 그림', out, count);
+    const subs = [];
+    const it = root.getFolders();
+    while (it.hasNext()) subs.push(it.next());
+    subs.sort(function (a, b) { return a.getName().localeCompare(b.getName(), 'ko'); });
+    subs.forEach(function (sf) { collect_(sf, sf.getName(), out, count); });
+    return reply_({ ok: true, groups: out });
+  } catch (err) {
+    return reply_({ ok: false, error: String(err) });
+  }
+}
+
+function sharedImage_(id) {
+  try {
+    if (!id || !/^[\w-]{10,}$/.test(id)) return reply_({ ok: false, error: '잘못된 요청' });
+    const root = sharedRoot_(), rootId = root.getId();
+    const f = DriveApp.getFileById(id);
+    // 공유 그림 폴더(또는 그 하위 폴더 한 단계) 안의 파일인지 확인
+    let inside = false;
+    const ps = f.getParents();
+    while (ps.hasNext() && !inside) {
+      const p = ps.next();
+      if (p.getId() === rootId) { inside = true; break; }
+      const gp = p.getParents();
+      while (gp.hasNext()) if (gp.next().getId() === rootId) { inside = true; break; }
+    }
+    if (!inside || !isImage_(f)) return reply_({ ok: false, error: '가져올 수 없는 파일이에요.' });
+    const b = f.getBlob();
+    if (b.getBytes().length > MAX_BYTES) return reply_({ ok: false, error: '그림이 너무 커요.' });
+    return reply_({ ok: true, name: f.getName(), data: 'data:' + b.getContentType() + ';base64,' + Utilities.base64Encode(b.getBytes()) });
+  } catch (err) {
+    return reply_({ ok: false, error: '가져올 수 없는 파일이에요.' });
+  }
+}
+
+/** 편집기에서 한 번 실행: 공유 그림 폴더를 만들고 주소를 알려 줍니다. */
+function setupShared() {
+  Logger.log('공유 그림 폴더: ' + sharedRoot_().getUrl());
 }
 
 /* ===================== v2: 학년·반·번호로 이름 찾기 =====================
