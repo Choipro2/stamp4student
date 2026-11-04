@@ -84,6 +84,9 @@
   .modal .row { justify-content: center; }
   .pgroups { display: flex; gap: 8px; flex-wrap: wrap; }
   .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; overflow-y: auto; max-height: 62vh; width: min(92vw, 760px); padding: 2px; }
+  .upbox { border: 2px dashed var(--line); border-radius: 12px; padding: 12px; width: min(92vw, 760px); box-sizing: border-box; }
+  .upbox input[type=text], .upbox input[type=password] { font: inherit; font-size: 16px; padding: 10px 12px; border: 2px solid var(--line); border-radius: 10px; }
+  .upbox[hidden] { display: none; }
   .pcard { border: 2px solid var(--line); border-radius: 12px; background: #fff; padding: 6px 4px 4px; text-align: center; cursor: pointer; }
   .pcard:active { border-color: var(--accent); }
   .pcard img { width: 100%; aspect-ratio: 1; object-fit: contain; display: block; }
@@ -249,7 +252,21 @@
   <div class="box">
     <div class="pgroups" id="sharedGroups"></div>
     <div class="pgrid" id="sharedGrid"><p class="hint" style="grid-column:1/-1;text-align:center">불러오는 중…</p></div>
+    <div class="upbox" id="upBox" hidden>
+      <p style="margin:0 0 6px;font-weight:700">선생님 그림 올리기</p>
+      <div class="row" style="flex-wrap:wrap;gap:8px">
+        <input type="password" id="upCode" placeholder="선생님 코드" autocomplete="off" style="flex:1 1 140px">
+        <input type="text" id="upGroup" list="upGroupList" placeholder="묶음 이름 (비우면 선생님 그림)" maxlength="20" style="flex:2 1 220px">
+        <datalist id="upGroupList"></datalist>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn primary" id="upPick">🖼️ 그림 파일 고르기 (여러 장 가능)</button>
+      </div>
+      <p class="hint" id="upStatus" style="margin:6px 0 0"></p>
+      <input type="file" id="upInput" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+    </div>
     <div class="row">
+      <button class="btn ghost" id="sharedUpToggle">⬆️ 그림 올리기 (선생님)</button>
       <button class="btn ghost" id="sharedReload">🔄 새로고침</button>
       <button class="btn ghost" id="sharedClose">닫기</button>
     </div>
@@ -539,6 +556,53 @@ async function openShared(force) {
   });
   renderShared();
 }
+// --- 선생님 그림 올리기 (선생님 코드 필요) ---
+$('sharedUpToggle').addEventListener('click', () => {
+  const box = $('upBox'); box.hidden = !box.hidden;
+  if (!box.hidden) {
+    try { $('upCode').value = sessionStorage.getItem('stamp.tcode') || ''; } catch (e) {}
+    $('upGroup').value = SHARED.group && SHARED.group !== '선생님 그림' ? SHARED.group : '';
+    $('upGroupList').innerHTML = (SHARED.groups || []).map(g => `<option value="${g.name.replace(/"/g, '')}">`).join('');
+  }
+});
+$('upPick').addEventListener('click', () => {
+  if (!$('upCode').value.trim()) { $('upStatus').textContent = '선생님 코드를 먼저 적어 주세요.'; $('upCode').focus(); return; }
+  $('upInput').click();
+});
+function toUploadDataURL(file) {
+  // 1200px 이하로 줄이고 흰 배경 PNG로 바꿔서 올린다
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => {
+      const r = Math.min(1, 1200 / Math.max(im.naturalWidth, im.naturalHeight));
+      const c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * r); c.height = Math.round(im.naturalHeight * r);
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); res(c.toDataURL('image/png'));
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); rej(new Error('그림을 읽지 못했어요')); };
+    im.src = url;
+  });
+}
+$('upInput').addEventListener('change', async e => {
+  const files = [...e.target.files]; e.target.value = '';
+  if (!files.length) return;
+  const code = $('upCode').value.trim(), group = $('upGroup').value.trim();
+  let ok = 0, fail = 0, lastErr = '';
+  for (let i = 0; i < files.length; i++) {
+    $('upStatus').textContent = `올리는 중… (${i + 1}/${files.length}) ${files[i].name}`;
+    try {
+      const image = await toUploadDataURL(files[i]);
+      const r = await fetch(CONFIG.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'sharedUpload', code, group, name: files[i].name.replace(/\.[^.]+$/, ''), image }) });
+      const d = await r.json();
+      if (!d.ok) { lastErr = d.error || '오류'; fail++; if (d.badCode) break; } else ok++;
+    } catch (err) { lastErr = err.message; fail++; }
+  }
+  if (ok) { try { sessionStorage.setItem('stamp.tcode', code); } catch (e) {} }
+  $('upStatus').textContent = `올림 ${ok}장` + (fail ? ` · 실패 ${fail}장 (${lastErr})` : '') + (ok ? ' — 이제 모든 학생 화면에 보여요.' : '');
+  if (ok) { if (group) SHARED.group = group; else SHARED.group = '선생님 그림'; openShared(true); }
+});
+
 function renderShared() {
   const grid = $('sharedGrid'); grid.innerHTML = '';
   const g = (SHARED.groups || []).find(x => x.name === SHARED.group); if (!g) return;

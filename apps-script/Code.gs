@@ -30,6 +30,7 @@ function doPost(e) {
   } catch (err) {
     return reply_({ ok: false, status: 'error', message: '데이터를 읽지 못했어요.' });
   }
+  if (data && data.action === 'sharedUpload') return sharedUpload_(data);  // 선생님 그림 올리기
   if (data && data.image) return saveV2_(data);   // v2 형식
   return saveV1_(data);                            // v1 형식
 }
@@ -119,6 +120,37 @@ function sharedImage_(id) {
     return reply_({ ok: true, name: f.getName(), data: 'data:' + b.getContentType() + ';base64,' + Utilities.base64Encode(b.getBytes()) });
   } catch (err) {
     return reply_({ ok: false, error: '가져올 수 없는 파일이에요.' });
+  }
+}
+
+/* 선생님 그림 올리기: 사이트에서 '선생님 코드'와 함께 올린 그림을 공유 그림 폴더에 저장합니다.
+ * 코드는 [프로젝트 설정 → 스크립트 속성]의 TEACHER_CODE 값입니다. (코드에 적지 않음)
+ */
+function sharedUpload_(d) {
+  try {
+    const code = PropertiesService.getScriptProperties().getProperty('TEACHER_CODE');
+    if (!code) return reply_({ ok: false, badCode: true, error: '선생님 코드가 아직 설정되지 않았어요.' });
+    if (String(d.code || '') !== code) return reply_({ ok: false, badCode: true, error: '선생님 코드가 맞지 않아요.' });
+    const m = String(d.image || '').match(/^data:(image\/(png|jpeg));base64,(.+)$/);
+    if (!m) return reply_({ ok: false, error: 'PNG·JPG 그림만 올릴 수 있어요.' });
+    const bytes = Utilities.base64Decode(m[3]);
+    if (bytes.length > MAX_BYTES) return reply_({ ok: false, error: '그림이 너무 커요.' });
+    const clean = function (s, max) { return String(s || '').replace(/[\\\/:*?"<>|\r\n]/g, '').trim().slice(0, max); };
+    const group = clean(d.group, 20);
+    const root = sharedRoot_();
+    let folder = root;
+    if (group && group !== '선생님 그림') {
+      const it = root.getFoldersByName(group);
+      folder = it.hasNext() ? it.next() : root.createFolder(group);
+    }
+    let base = clean(d.name, 40) || '그림';
+    const ext = m[2] === 'jpeg' ? '.jpg' : '.png';
+    let fname = base + ext, k = 2;
+    while (folder.getFilesByName(fname).hasNext()) fname = base + ' (' + (k++) + ')' + ext;
+    folder.createFile(Utilities.newBlob(bytes, m[1], fname));
+    return reply_({ ok: true, file: fname, group: group || '선생님 그림' });
+  } catch (err) {
+    return reply_({ ok: false, error: String(err).slice(0, 120) });
   }
 }
 
