@@ -147,7 +147,7 @@
         </div>
         <div class="slider"><span>진하기</span><input type="range" id="thr" min="-80" max="80" value="0"><output id="thrOut">0</output></div>
         <div class="slider"><span>선 굵게</span><input type="range" id="thick" min="0" max="4" value="0"><output id="thickOut">0</output></div>
-        <div class="slider"><span>그림 크기</span><input type="range" id="scale" min="30" max="140" value="100"><output id="scaleOut">100%</output></div>
+        <div class="slider"><span>그림 크기</span><input type="range" id="scale" min="30" max="200" value="100"><output id="scaleOut">100%</output></div>
         <p class="hint">미리보기에서 그림을 손가락으로 끌어 자리를 옮길 수 있어요. 가는 선은 "선 굵게"를 올려요.</p>
       </div>
     </div>
@@ -350,6 +350,8 @@ const BORDERS = [
   { id: 'none',   name: '없음' },
 ];
 // 테두리 종류별로 안쪽 내용이 시작하는 위치(px). 없으면 95.
+// 그림을 잘라 낼 테두리 안쪽 선 위치(px, 1000 기준)
+const CLIP_INSET = { none: 0, single: 52, double: 87, round: 52, stitch: 88, dots: 68, wave: 76, zigzag: 80, band_heart: 119, band_star: 119, c_single: 53, c_double: 90, c_stitch: 90, c_dots: 64 };
 const BORDER_INNER = { none: 60, band_heart: 130, band_star: 130, c_single: 150, c_double: 170, c_stitch: 170, c_dots: 150 };
 
 // 작은 모양(하트·별 등). 가운데가 (0,0)이고 한 변이 1인 상자 안에 검정으로 그린다. 테두리 띠에 쓰인다. (모양 스티커 UI는 2026-10-28 제거)
@@ -989,7 +991,16 @@ function drawStamp(ctx, forExport) {
     const w = p.width * fit, h = p.height * fit;
     const x = R.x + (R.w - w) / 2 + state.dx, y = R.y + (R.h - h) / 2 + state.dy;
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    // 그림이 커져도 테두리 선 밖으로 나가지 않도록 테두리 안쪽만 그린다
+    ctx.save();
+    const ci = CLIP_INSET[state.border] ?? 0;
+    ctx.beginPath();
+    if (isCircle() || state.border.startsWith('c_')) ctx.arc(S / 2, S / 2, S / 2 - Math.max(ci, 40), 0, Math.PI * 2);
+    else if (state.border === 'round') roundRect(ctx, ci, ci, S - 2 * ci, S - 2 * ci, 80);
+    else ctx.rect(ci, ci, S - 2 * ci, S - 2 * ci);
+    ctx.clip();
     ctx.drawImage(p, x, y, w, h);
+    ctx.restore();
   }
   // 스티커
   for (const st of state.stickers) { const r = stickerRect(st); if (r) ctx.drawImage(r.c, r.x, r.y); }
@@ -1243,7 +1254,7 @@ FONTS.forEach(f => document.fonts.load(`${f.weight} 40px ${f.css}`, '참 잘했�
     } else if (pts.size === 2 && pinch0) {
       const [a, b] = [...pts.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y);
       if (target === 'img') {
-        state.scale = Math.min(1.4, Math.max(0.3, scale0 * d / pinch0));
+        state.scale = Math.min(2, Math.max(0.3, scale0 * d / pinch0));
         $('scale').value = Math.round(state.scale * 100); $('scaleOut').textContent = Math.round(state.scale * 100) + '%';
       } else if (isTxt(target)) { state.txt[target.slice(4)].s = Math.min(2, Math.max(0.4, scale0 * d / pinch0)); syncTxtTools(); }
       else if (state.stickers[target]) setStkSize(state.stickers[target], scale0 * d / pinch0);
